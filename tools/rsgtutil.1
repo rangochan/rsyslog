@@ -1,0 +1,182 @@
+.\" Man page generated from reStructuredText.
+.
+.TH RSGTUTIL 1 "2013-03-25" "" ""
+.SH NAME
+rsgtutil \- Manage (GuardTime) Signed Log Files
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH SYNOPSIS
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+rsgtutil [OPTIONS] [FILE] ...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH DESCRIPTION
+.sp
+This tool performs various maintenance operations on signed log files.
+It specifically supports the GuardTime signature provider.
+.sp
+The \fIrsgtutil\fP tool is the primary tool to verify log file signatures,
+dump signature file contents and carry out other maintenance operations.
+The tool offers different operation modes, which are selected via
+command line options.
+.sp
+The processing of multiple files is permitted. Depending on operation
+mode, either the signature file or the base log file must be specified.
+Within a single call, only a single operations mode is permitted. To
+use different modes on different files, multiple calles, one for each
+mode, must be made.
+.sp
+If no file is specified on the command line, stdin is used instead. Note
+that not all operation modes support stdin.
+.SH OPTIONS
+.INDENT 0.0
+.TP
+.B \-D\fP,\fB  \-\-dump
+Select "dump" operations mode.
+.TP
+.B \-t\fP,\fB  \-\-verify
+Select "verify" operations mode.
+.TP
+.B \-T\fP,\fB  \-\-detect\-file\-type
+Select "detect\-file\-type" operations mode.
+.TP
+.B \-B\fP,\fB  \-\-show\-sigblock\-params
+Select "show\-sigblock\-params" operations mode.
+.TP
+.B \-s\fP,\fB  \-\-show\-verified
+Prints out information about correctly verified blocks (by default, only
+errors are printed).
+.TP
+.B \-v\fP,\fB  \-\-verbose
+Select verbose mode. Most importantly, hashes and signatures are printed
+in full length (can be \fBvery\fP lengthy) rather than the usual abbreviation.
+.TP
+.B \-e\fP,\fB  \-\-extend
+Select extend mode. This extends the RFC3161 signatures. Note that this
+mode also implies a full verification. If there are verify errors, extending
+will also fail.
+.TP
+.BI \-P \ <URL>\fP,\fB \ \-\-publications\-server \ <URL>
+Sets the publications server. If not set but required by the operation a
+default server is used. The default server is not necessarily optimal
+in regard to performance and reliability.
+.UNINDENT
+.SH OPERATION MODES
+.sp
+The operation mode specifies what exactly the tool does with the provided
+files. The default operation mode is "dump", but this may change in the future.
+Thus, it is recommended to always set the operations mode explicitely. If
+multiple operations mode are set on the command line, results are
+unpredictable.
+.SS dump
+.sp
+The provided \fIsignature\fP files are dumped. For each top\-level record, the*u
+type code is printed as well as q short description. If there is additional
+information available, it will be printed in tab\-indented lines below the
+main record dump. The actual \fIlog\fP files need not to be present.
+.SS verify
+.sp
+This mode does not work with stdin. On the command line, the \fIlog\fP file names
+are specified. The corresponding \fIsignature\fP files (ending on ".gtsig") must also
+be preset at the same location as the log file. In verify mode, both the log
+and signature file is read and the validity of the log file checked. If verification
+errors are detected these are printed and processing of the file aborted. By default,
+each file is verified individually, without taking cross\-file hash chains into
+account (so the order of files on the command line does not matter).
+.sp
+Note that the actual amount of what can be verified depends on the parameters with
+which the signature file was written. If record and tree hashes are present, they
+will be verified and thus fine\-granular error reporting is possible. If they are
+not present, only the block signature itself is verified.
+.sp
+By default, only errors are printed. To also print successful verifications, use the
+\fB\-\-show\-verified\fP option.
+.SS extend
+.sp
+This extends the RFC3161 signatures. This includes a full verification
+of the file. If there are verification errors, extending will also fail.
+Note that a signature can only be extended when the required hash has been
+published. Currently, these hashes are created at the 15th of each month at
+0:00hrs UTC. It takes another few days to get them finally published. As such,
+it can be assumed that extending is only possible after this happend (which
+means it may take slightly above a month).
+.sp
+To prevent data corruption, a copy of the signature file is created during
+extension. So there must be enough disk space available for both files,
+otherwise the operation will fail. If the log file is named logfile, the
+signature file is logfile.gtsig and the temporary work file is named
+logfile.gtsig.new. When extending finished successfully, the original
+signature file (logfile.gtsig in our example) is renamed with the .old
+postfix (logfile.gtsig.old) and the temporary file written under the
+original name. The .old file can be deleted. It is just kept as a
+precaution to prevent signature loss. Note that any already existing
+.old or .new files are overwritten by these operations.
+.SS detect\-file\-type
+.sp
+This mode is used to detect the type of some well\-know files used inside the
+signature system. The detection is based on the file header. This mode is
+primarily a debug aid.
+.SS show\-sigblock\-params
+.sp
+This mode is used to print signature block parameters. It is similar to \fIdump\fP
+mode, but will ignore everything except signature blocks. Also, some additional
+meta information is printed. This mode is primarily a debug aid.
+.SH EXIT CODES
+.sp
+The command returns an exit code of 0 if everything went fine, and some
+other code in case of failures.
+.SH EXAMPLES
+.sp
+\fBrsgtutil \-\-verify logfile\fP
+.sp
+This verifies the file "logfile" via its associated signature file
+"logfile.gtsig". If errors are detected, these are reported to stderr.
+Otherwise, rsgtutil terminates without messages.
+.sp
+\fBrsgtutil \-\-dump logfile.gtsig\fP
+.sp
+This dumps the content of the signature file "logfile.gtsig". The
+actual log file is not being processed and does not even need to be
+present.
+.SH SEE ALSO
+.sp
+\fBrsyslogd(8)\fP
+.SH COPYRIGHT
+.sp
+This page is part of the \fIrsyslog\fP project, and is available under
+LGPLv2.
+.SH AUTHOR
+Rainer Gerhards <rgerhards@adiscon.com>
+.\" Generated by docutils manpage writer.
+.
